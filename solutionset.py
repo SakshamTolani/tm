@@ -261,6 +261,35 @@ def index(files):
             except KeyError:
                 dix[word] = [i] # inserting new term
     return dix
+
+# create inverted index using libraries
+
+def create_inverted_matrix(files):
+    # Read the files
+    documents = []
+    for file in files:
+        with open(file, 'r') as f:
+            documents.append(f.read())
+    
+    # Use CountVectorizer to create the term-document matrix
+    vectorizer = CountVectorizer()
+    X = vectorizer.fit_transform(documents)
+    matrix = X.toarray()
+    words = vectorizer.get_feature_names_out()
+    
+    # Create a DataFrame for easier manipulation
+    df = pd.DataFrame(matrix, columns=words)
+    
+    # Create the inverted index
+    inverted_index = {}
+    for word in words:
+        doc_ids = df.index[df[word] > 0].tolist()
+        inverted_index[word] = doc_ids
+    
+    return inverted_index
+
+
+
 # perform AND Query
 def andQuery(dix, w1, w2):
     try:    # get posting for word-1, else error
@@ -751,6 +780,26 @@ def purity_score(y_true, y_pred):
 
 purity = purity_score(y, clusters)
 print(f"\nPurity: {purity:.4f}")
+
+
+# AND-OR-NOT QUERY USING PANDAS
+def printInverted(inverted_index):
+    for word, doc_ids in inverted_index.items():
+        print(f'{word}: {doc_ids}')
+
+def and_query(df, words,files):
+    result = df.loc[words].all()
+    return len(result[result].index.to_list())==len(files)
+    # return result
+
+def or_query(df, words):
+    result = df.loc[words].any()
+    return len(result[result].index.to_list())>0
+    # return result
+
+def not_query(df, word):
+    result = ~df.loc[word]
+    return len(result[result].index.to_list())>0
 
 
 
